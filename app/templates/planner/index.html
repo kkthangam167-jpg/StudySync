@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+{% block title %}Smart Study Planner & Priority Engine{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; gap: 2rem;">
+  <!-- Header Bar -->
+  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h1 style="font-size: 1.85rem; font-weight: 800;">Smart Study Planner & Priority Engine</h1>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">Deterministic algorithmic scheduling based on exam proximity, deadlines, and available hours.</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+      <button onclick="openModal('generate-plan-modal')" class="btn btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 16px; height: 16px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Generate Today's Plan
+      </button>
+    </div>
+  </div>
+
+  <!-- Missed Sessions Banner (Smart Rescheduling Engine) -->
+  {% if missed_sessions %}
+    <div class="card" style="background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.35); padding: 1.25rem 1.5rem;">
+      <div style="display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.5rem; color: #f87171; font-weight: 700; margin-bottom: 0.25rem;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 20px; height: 20px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Missed Study Sessions Detected ({{ missed_sessions|length }})
+          </div>
+          <p style="font-size: 0.88rem; color: var(--text-muted);">
+            You have planned study blocks whose scheduled time has passed. Reschedule them to open slots tomorrow without disrupting your master schedule.
+          </p>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 0.65rem; margin-top: 1rem;">
+        {% for ms in missed_sessions %}
+          <div style="background: var(--bg-card); border-radius: var(--radius-sm); border: 1px solid var(--border-color); padding: 0.75rem 1rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+              <span style="font-weight: 600; font-size: 0.9rem;">{{ ms.title }}</span>
+              <span style="font-size: 0.78rem; color: var(--text-dim); margin-left: 0.5rem;">
+                ({{ ms.scheduled_date.strftime('%b %d') }} at {{ ms.start_time }}) • {{ ms.duration_minutes }}m
+              </span>
+            </div>
+            <button onclick="requestReschedulePreview({{ ms.id }})" class="btn btn-sm btn-primary">
+              Propose New Slot 🔄
+            </button>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Active Plan For Today -->
+  <div class="card" style="padding: 1.5rem;">
+    <div class="card-header">
+      <div>
+        <h2 class="card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 20px; height: 20px; color: #10b981;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Today's Scheduled Study Plan ({{ today.strftime('%A, %b %d') }})
+        </h2>
+        {% if today_plan %}
+          <div style="font-size: 0.82rem; color: var(--text-dim); margin-top: 0.25rem;">
+            Target: {{ today_plan.target_hours }}h • {{ today_plan.generated_reason }}
+          </div>
+        {% endif %}
+      </div>
+
+      {% if today_plan %}
+        <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">Active Plan</span>
+      {% else %}
+        <button onclick="openModal('generate-plan-modal')" class="btn btn-sm btn-primary">Create Plan</button>
+      {% endif %}
+    </div>
+
+    {% if today_sessions %}
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        {% for session in today_sessions %}
+          <div style="background: var(--bg-sidebar); border-radius: var(--radius-md); border: 1px solid var(--border-color); padding: 0.9rem 1.25rem; display: flex; align-items: center; justify-content: space-between; border-left: 4px solid {% if session.is_break %}#10B981{% else %}var(--primary){% endif %}; opacity: {% if session.status == 'completed' %}0.7{% else %}1{% endif %};">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <form method="POST" action="{{ url_for('planner.toggle_session', session_id=session.id) }}">
+                <button type="submit" style="background: none; border: 1px solid var(--border-light); width: 22px; height: 22px; border-radius: 4px; color: #10b981; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">
+                  {% if session.status == 'completed' %}✓{% endif %}
+                </button>
+              </form>
+
+              <div>
+                <div style="font-weight: 600; font-size: 0.95rem; {% if session.status == 'completed' %}text-decoration: line-through; color: var(--text-muted);{% endif %}">
+                  {{ session.title }}
+                </div>
+                <div style="font-size: 0.78rem; color: var(--text-dim); margin-top: 0.2rem;">
+                  {{ session.duration_minutes }} minutes • {{ session.notes }}
+                </div>
+              </div>
+            </div>
+
+            <div style="font-weight: 700; font-size: 0.9rem; color: #818cf8;">
+              {{ session.start_time }} – {{ session.end_time }}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <div class="empty-state-icon">📝</div>
+        <div class="empty-state-title">No Active Study Plan for Today</div>
+        <div class="empty-state-desc">Generate an optimized study timetable matching your free evening hours, upcoming exams, and priority deadlines.</div>
+        <button onclick="openModal('generate-plan-modal')" class="btn btn-primary">Generate Plan Now</button>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Priority Engine Scoring Breakdown -->
+  <div class="card" style="padding: 1.5rem;">
+    <div class="card-header">
+      <div>
+        <h2 class="card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 20px; height: 20px; color: #fbbf24;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          Smart Priority Rankings (Deterministic Rule-Engine)
+        </h2>
+        <p style="font-size: 0.82rem; color: var(--text-dim); margin-top: 0.2rem;">
+          Formula: Exam Proximity (0-50 pts) + Deadline Urgency (0-45 pts) + Priority (10-30 pts) + Revision Need (0-30 pts).
+        </p>
+      </div>
+    </div>
+
+    {% if priorities %}
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem; text-align: left;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-dim); font-size: 0.78rem; text-transform: uppercase;">
+              <th style="padding: 0.75rem 1rem;">Task / Subject</th>
+              <th style="padding: 0.75rem 1rem;">Type</th>
+              <th style="padding: 0.75rem 1rem;">Priority Tier</th>
+              <th style="padding: 0.75rem 1rem;">Score</th>
+              <th style="padding: 0.75rem 1rem;">Transparent Rationale</th>
+              <th style="padding: 0.75rem 1rem; text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in priorities %}
+              <tr style="border-bottom: 1px solid var(--border-color);">
+                <td style="padding: 0.85rem 1rem;">
+                  <div style="font-weight: 600;">{{ item.title }}</div>
+                  <div style="font-size: 0.78rem; color: {{ item.subject_color }};">{{ item.subject_name }}</div>
+                </td>
+                <td style="padding: 0.85rem 1rem; font-size: 0.8rem; text-transform: capitalize; color: var(--text-muted);">
+                  {{ item.type.replace('_', ' ') }}
+                </td>
+                <td style="padding: 0.85rem 1rem;">
+                  <span class="badge badge-{{ item.priority_level }}">{{ item.priority_level|upper }}</span>
+                </td>
+                <td style="padding: 0.85rem 1rem; font-weight: 700; color: #818cf8;">
+                  {{ item.score }}
+                </td>
+                <td style="padding: 0.85rem 1rem; font-size: 0.82rem; color: var(--text-muted); max-width: 320px;">
+                  {{ item.explanation }}
+                </td>
+                <td style="padding: 0.85rem 1rem; text-align: right;">
+                  <a href="{{ url_for('timer.index') }}" class="btn btn-sm btn-secondary" style="font-size: 0.75rem;">Study ⏱️</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <div class="empty-state-icon">🎯</div>
+        <div class="empty-state-title">No Academic Items to Rank</div>
+        <div class="empty-state-desc">Add assignments or syllabus topics to let the Priority Engine calculate your optimal study sequence.</div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Generate Plan Modal -->
+<div id="generate-plan-modal" class="modal-overlay">
+  <div class="modal-content" style="max-width: 600px;">
+    <div class="modal-header">
+      <h3 style="font-size: 1.15rem; font-weight: 700;">Generate Personalized Study Plan</h3>
+      <button onclick="closeModal('generate-plan-modal')" style="background: none; border: none; color: inherit; font-size: 1.25rem; cursor: pointer;">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Target Date</label>
+        <input type="date" id="plan-target-date" class="form-control" value="{{ today.strftime('%Y-%m-%d') }}">
+      </div>
+
+      <div class="grid-2" style="gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label">Available Study Time (Hours)</label>
+          <input type="number" step="0.5" id="plan-available-hours" class="form-control" value="{{ user.daily_available_hours or 3.5 }}" min="1" max="10">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Preferred Study Window</label>
+          <input type="text" class="form-control" value="{{ user.preferred_study_hours }}" readonly style="opacity: 0.8;">
+        </div>
+      </div>
+
+      <button type="button" id="btn-preview-plan" onclick="fetchPlanPreview()" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">
+        ✨ Compute Optimized Sessions
+      </button>
+
+      <!-- Preview container -->
+      <div id="plan-preview-container" style="display: none; margin-top: 1.5rem;">
+        <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.75rem; color: #818cf8;">Proposed Conflict-Free Sessions</h4>
+        <div id="plan-preview-sessions" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 240px; overflow-y: auto;"></div>
+        
+        <form method="POST" action="{{ url_for('planner.accept_plan') }}" style="margin-top: 1.25rem;">
+          <input type="hidden" name="plan_data" id="plan-data-hidden-input">
+          <button type="submit" class="btn btn-primary" style="width: 100%;">
+            ✓ Accept & Save This Study Plan
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Reschedule Confirmation Modal -->
+<div id="reschedule-modal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 style="font-size: 1.15rem; font-weight: 700;">Smart Reschedule Proposal</h3>
+      <button onclick="closeModal('reschedule-modal')" style="background: none; border: none; color: inherit; font-size: 1.25rem; cursor: pointer;">&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('planner.confirm_reschedule') }}">
+      <input type="hidden" name="session_id" id="reschedule-session-id">
+      <div class="modal-body">
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
+          We found an open, conflict-free time slot without classes or exams:
+        </p>
+
+        <div style="background: var(--bg-sidebar); border-radius: var(--radius-md); padding: 1rem; border: 1px solid var(--border-color); margin-bottom: 1.25rem;">
+          <div style="font-weight: 700; font-size: 1rem; margin-bottom: 0.25rem;" id="reschedule-task-title"></div>
+          <div style="font-size: 0.85rem; color: #f87171; margin-bottom: 0.5rem;">Originally missed: <span id="reschedule-original-time"></span></div>
+          <div style="font-size: 0.88rem; color: #34d399; font-weight: 600;">Proposed Slot: <span id="reschedule-proposed-slot"></span></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Proposed Date</label>
+          <input type="date" name="proposed_date" id="reschedule-proposed-date" class="form-control" required>
+        </div>
+
+        <div class="grid-2" style="gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label">Start Time</label>
+            <input type="time" name="proposed_start_time" id="reschedule-proposed-start" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">End Time</label>
+            <input type="time" name="proposed_end_time" id="reschedule-proposed-end" class="form-control" required>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" onclick="closeModal('reschedule-modal')" class="btn btn-secondary">Reject</button>
+        <button type="submit" class="btn btn-primary">Confirm Reschedule</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+async function fetchPlanPreview() {
+  const targetDate = document.getElementById('plan-target-date').value;
+  const availableHours = document.getElementById('plan-available-hours').value;
+  const btn = document.getElementById('btn-preview-plan');
+
+  btn.textContent = 'Computing optimal slots...';
+  btn.disabled = true;
+
+  try {
+    const formData = new FormData();
+    formData.append('target_date', targetDate);
+    formData.append('available_hours', availableHours);
+
+    const res = await fetch('{{ url_for("planner.generate_preview") }}', {
+      method: 'POST',
+      body: formData
+    });
+    const data = await res.json();
+
+    if (data.success && data.plan) {
+      const container = document.getElementById('plan-preview-container');
+      const sessionsDiv = document.getElementById('plan-preview-sessions');
+      document.getElementById('plan-data-hidden-input').value = JSON.stringify(data.plan);
+
+      sessionsDiv.innerHTML = data.plan.sessions.map(s => `
+        <div style="background: var(--bg-sidebar); border-radius: var(--radius-sm); padding: 0.65rem 0.85rem; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid ${s.is_break ? '#10B981' : '#6366F1'};">
+          <div>
+            <div style="font-weight: 600; font-size: 0.88rem;">${s.title}</div>
+            <div style="font-size: 0.74rem; color: var(--text-dim);">${s.reason || ''}</div>
+          </div>
+          <div style="font-weight: 700; font-size: 0.82rem; color: #818cf8;">${s.start_time} - ${s.end_time}</div>
+        </div>
+      `).join('');
+
+      container.style.display = 'block';
+    }
+  } catch (err) {
+    alert('Error generating preview: ' + err);
+  } finally {
+    btn.textContent = '✨ Compute Optimized Sessions';
+    btn.disabled = false;
+  }
+}
+
+async function requestReschedulePreview(sessionId) {
+  try {
+    const res = await fetch(`{{ url_for('planner.preview_reschedule') }}?session_id=${sessionId}`);
+    const data = await res.json();
+
+    if (data.original_session_id) {
+      document.getElementById('reschedule-session-id').value = data.original_session_id;
+      document.getElementById('reschedule-task-title').textContent = data.title;
+      document.getElementById('reschedule-original-time').textContent = `${data.original_date} (${data.original_time})`;
+      document.getElementById('reschedule-proposed-slot').textContent = `${data.proposed_date} from ${data.proposed_start_time} to ${data.proposed_end_time}`;
+      document.getElementById('reschedule-proposed-date').value = data.proposed_date;
+      document.getElementById('reschedule-proposed-start').value = data.proposed_start_time;
+      document.getElementById('reschedule-proposed-end').value = data.proposed_end_time;
+
+      openModal('reschedule-modal');
+    } else {
+      alert('Could not find session to reschedule.');
+    }
+  } catch (err) {
+    alert('Failed to calculate reschedule slot: ' + err);
+  }
+}
+</script>
+{% endblock %}

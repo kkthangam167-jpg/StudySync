@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}StudySync — Your Smart Academic Companion{% endblock %}
+
+{% block public_content %}
+<div style="min-height: 100vh; background: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.15) 0%, rgba(9, 13, 22, 1) 70%);">
+  <!-- Landing Navigation -->
+  <header style="max-width: 1200px; margin: 0 auto; padding: 1.5rem 2rem; display: flex; align-items: center; justify-content: space-between;">
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+      <div class="brand-icon">S</div>
+      <span class="brand-name" style="font-size: 1.4rem; font-weight: 800;">StudySync</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 1rem;">
+      <a href="{{ url_for('auth.login') }}" class="btn btn-secondary">Sign In</a>
+      <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Get Started Free</a>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section style="max-width: 900px; margin: 4rem auto 3rem; text-align: center; padding: 0 1.5rem;">
+    <div class="badge" style="background: rgba(99, 102, 241, 0.2); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.4); margin-bottom: 1.5rem; padding: 0.4rem 1rem;">
+      ✨ Full-Stack Capstone Academic Companion
+    </div>
+    <h1 style="font-size: 3.2rem; font-weight: 800; line-height: 1.15; margin-bottom: 1.5rem; letter-spacing: -1px;">
+      Master Your University Life with <span style="background: linear-gradient(135deg, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Intelligent Academic Planning</span>
+    </h1>
+    <p style="font-size: 1.15rem; color: var(--text-muted); line-height: 1.7; max-width: 720px; margin: 0 auto 2.5rem;">
+      Organize timetables, conquer complex assignments, track syllabus mastery, and let our deterministic priority engine and AI study assistant optimize your daily focus.
+    </p>
+    <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+      <a href="{{ url_for('auth.register') }}" class="btn btn-primary" style="padding: 0.85rem 2rem; font-size: 1rem;">Create Student Account &rarr;</a>
+      <a href="{{ url_for('auth.login') }}" class="btn btn-secondary" style="padding: 0.85rem 1.75rem; font-size: 1rem;">Sign In</a>
+    </div>
+  </section>
+
+  <!-- Feature Showcase Grid -->
+  <section style="max-width: 1200px; margin: 4rem auto 6rem; padding: 0 1.5rem;">
+    <div style="text-align: center; margin-bottom: 3rem;">
+      <h2 style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;">Engineered for University Success</h2>
+      <p style="color: var(--text-muted);">Twelve integrated modules designed to eliminate academic chaos.</p>
+    </div>
+
+    <div class="grid-3">
+      <!-- 1. Smart Dashboard -->
+      <div class="card" style="padding: 1.75rem;">
+        <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(99, 102, 241, 0.15); color: #818cf8; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 1rem;">📊</div>
+        <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem;">Smart Dashboard</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Real-time database analytics, upcoming deadlines, exam countdowns, and active study plans at a glance.</p>
+      </div>
+
+      <!-- 2. Assignments & Deadlines -->
+      <div class="card" style="padding: 1.75rem;">
+        <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(236, 72, 153, 0.15); color: #f472b6; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 1rem;">📝</div>
+        <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem;">Assignment Tracker</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Manage lab reports and projects with priority rankings, effort estimates, and approaching deadline alerts.</p>
+      </div>
+
+      <!-- 3. Timetable & Exams -->
+      <div class="card" style="padding: 1.75rem;">
+        <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(59, 130, 246, 0.15); color: #60a5fa; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 1rem;">🗓️</div>
+        <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem;">Timetable & Exams</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Conflict-free weekly class schedule and examination countdown calendar with venue and syllabus notes.</p>
+      </div>
+
+      <!-- 4. Syllabus & Revision -->
+      <div class="card" style="padding: 1.75rem;">
+        <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(16, 185, 129, 0.15); color: #34d399; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 1rem;">📖</div>
+        <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem;">Syllabus Mastery</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Track units and individual topics with self-assessed 1-5 confidence scores and automated revision flags.</p>
+      </div>
+
+      <!-- 5. Priority Engine -->
+      <div class="card" style="padding: 1.75rem;">
+        <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(245, 158, 11, 0.15); color: #fbbf24; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 1rem;">⚡</div>
+        <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem;">Smart Priority Engine</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Deterministic Python scoring formula combining exam proximity, urgency, and revision status with transparent reasoning.</p>
+      </div>
+
+      <!-- 6. AI Study Assistant -->
+      <div class="card" style="padding: 1.75rem;">
+        <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(139, 92, 246, 0.15); color: #a78bfa; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 1rem;">🤖</div>
+        <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem;">AI Study Assistant</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Integrated Google Gemini conversational tutor grounded with your actual academic deadlines and course topics.</p>
+      </div>
+
+      <!-- 7. Study Planner -->
+      <div class="card" style="padding: 1.75rem;">
+        <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(14, 165, 233, 0.15); color: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 1rem;">🎯</div>
+        <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem;">Personalized Planner</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Generate realistic study sessions respecting class hours, break intervals, and workload capacities.</p>
+      </div>
+
+      <!-- 8. Smart Rescheduler -->
+      <div class="card" style="padding: 1.75rem;">
+        <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(239, 68, 68, 0.15); color: #f87171; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 1rem;">🔄</div>
+        <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem;">Smart Rescheduling</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Missed a planned session? Automatically recalculate conflict-free alternative slots without overwriting history.</p>
+      </div>
+
+      <!-- 9. Focus Timer -->
+      <div class="card" style="padding: 1.75rem;">
+        <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(168, 85, 247, 0.15); color: #c084fc; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 1rem;">⏱️</div>
+        <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem;">Focus Timer</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Configurable Pomodoro focus blocks with task tagging, persistent state, and database session logging.</p>
+      </div>
+
+      <!-- 10. Academic Analytics -->
+      <div class="card" style="padding: 1.75rem;">
+        <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(34, 197, 94, 0.15); color: #4ade80; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 1rem;">📈</div>
+        <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem;">Academic Analytics</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Visual Chart.js trends comparing planned vs actual hours, subject completion rates, and CSV data export.</p>
+      </div>
+
+      <!-- 11. Study Groups -->
+      <div class="card" style="padding: 1.75rem;">
+        <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(249, 115, 22, 0.15); color: #fb923c; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 1rem;">👥</div>
+        <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem;">Collaborative Groups</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Invite code study circles with shared revision checklists, group tasks, and goal completion tracking.</p>
+      </div>
+
+      <!-- 12. Achievements -->
+      <div class="card" style="padding: 1.75rem;">
+        <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(234, 179, 8, 0.15); color: #fde047; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 1rem;">🏆</div>
+        <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem;">Milestone Badges</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Earn verified badges based on real study sessions and task completions. No fake or punitive streaks.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer style="border-top: 1px solid var(--border-color); padding: 2.5rem 1.5rem; text-align: center; color: var(--text-dim); font-size: 0.88rem;">
+    <div style="max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+      <div>StudySync &copy; 2026 — Smart Academic Companion. Capstone Project.</div>
+      <div style="display: flex; gap: 1.5rem;">
+        <a href="{{ url_for('auth.login') }}" style="color: var(--text-muted);">Sign In</a>
+        <a href="{{ url_for('auth.register') }}" style="color: var(--text-muted);">Register</a>
+      </div>
+    </div>
+  </footer>
+</div>
+{% endblock %}

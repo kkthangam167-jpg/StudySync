@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+{% block title %}Smart Dashboard{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; gap: 2rem;">
+  <!-- Welcome Banner & Quick Actions -->
+  <div class="card" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.08)); border-color: rgba(99, 102, 241, 0.3); padding: 1.75rem 2rem;">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <div class="badge" style="background: rgba(99, 102, 241, 0.2); color: #818cf8; margin-bottom: 0.5rem;">
+          {{ current_user.semester }} • {{ current_user.program }}
+        </div>
+        <h1 style="font-size: 1.85rem; font-weight: 800; letter-spacing: -0.5px;">Welcome back, {{ current_user.full_name }}! 👋</h1>
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.2rem;">
+          {% if overdue_assignments %}
+            ⚠️ You have <strong style="color: #f87171;">{{ overdue_assignments|length }} overdue task(s)</strong> that need immediate attention.
+          {% elif top_recommendations %}
+            Your top academic priority today is <strong style="color: #818cf8;">{{ top_recommendations[0].title }}</strong>.
+          {% else %}
+            Ready to study? Generate your personalized daily study plan or start a focus timer.
+          {% endif %}
+        </p>
+      </div>
+
+      <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <button onclick="openModal('quick-assignment-modal')" class="btn btn-secondary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 16px; height: 16px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Assignment
+        </button>
+        <a href="{{ url_for('planner.index') }}" class="btn btn-primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 16px; height: 16px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Generate Study Plan
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Real Academic Metrics Cards -->
+  <div class="grid-4">
+    <!-- Weekly Focus Time -->
+    <div class="card" style="padding: 1.25rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; color: var(--text-dim); margin-bottom: 0.5rem;">
+        <span style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase;">Weekly Focus</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 18px; height: 18px; color: #818cf8;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <div style="font-size: 1.85rem; font-weight: 800;">{{ metrics.weekly_focus_hours }} <span style="font-size: 1rem; font-weight: 500; color: var(--text-dim);">hours</span></div>
+      <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.25rem;">{{ metrics.today_focus_minutes }} min completed today</div>
+    </div>
+
+    <!-- Pending Assignments -->
+    <div class="card" style="padding: 1.25rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; color: var(--text-dim); margin-bottom: 0.5rem;">
+        <span style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase;">Pending Tasks</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 18px; height: 18px; color: #f59e0b;"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M15 2H9a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1Z"/></svg>
+      </div>
+      <div style="font-size: 1.85rem; font-weight: 800;">{{ metrics.pending_assignments }}</div>
+      <div style="font-size: 0.78rem; color: {% if metrics.overdue_assignments > 0 %}#f87171{% else %}var(--text-muted){% endif %}; margin-top: 0.25rem;">
+        {{ metrics.overdue_assignments }} overdue task(s)
+      </div>
+    </div>
+
+    <!-- Syllabus Progress -->
+    <div class="card" style="padding: 1.25rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; color: var(--text-dim); margin-bottom: 0.5rem;">
+        <span style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase;">Avg Syllabus</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 18px; height: 18px; color: #10b981;"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/></svg>
+      </div>
+      <div style="font-size: 1.85rem; font-weight: 800;">{{ metrics.avg_syllabus_progress }}%</div>
+      <div class="progress-bar-container" style="margin-top: 0.5rem; height: 6px;">
+        <div class="progress-bar-fill" style="width: {{ metrics.avg_syllabus_progress }}%;"></div>
+      </div>
+    </div>
+
+    <!-- Milestone Badges -->
+    <div class="card" style="padding: 1.25rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; color: var(--text-dim); margin-bottom: 0.5rem;">
+        <span style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase;">Achievements</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 18px; height: 18px; color: #eab308;"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+      </div>
+      <div style="font-size: 1.85rem; font-weight: 800;">{{ metrics.achievements_earned }} <span style="font-size: 1rem; font-weight: 500; color: var(--text-dim);">unlocked</span></div>
+      <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.25rem;">Across {{ metrics.active_subjects_count }} active subjects</div>
+    </div>
+  </div>
+
+  <!-- Middle Row: Priority Recommendations & Today's Schedule -->
+  <div class="grid-2">
+    <!-- Smart Recommendations (Deterministic Priority Engine) -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 20px; height: 20px; color: #fbbf24;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          Smart Priority Recommendations
+        </h2>
+        <span class="badge" style="background: rgba(99, 102, 241, 0.15); color: #818cf8;">Rule-Engine</span>
+      </div>
+
+      {% if top_recommendations %}
+        <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+          {% for item in top_recommendations %}
+            <div style="padding: 1rem; border-radius: var(--radius-md); background: var(--bg-sidebar); border: 1px solid var(--border-color);">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.35rem;">
+                <span style="font-weight: 600; font-size: 0.95rem;">{{ item.title }}</span>
+                <span class="badge badge-{{ item.priority_level }}">{{ item.priority_level|upper }} ({{ item.score }} pts)</span>
+              </div>
+              <div style="font-size: 0.82rem; color: var(--text-dim); margin-bottom: 0.5rem;">
+                <span style="color: {{ item.subject_color }}; font-weight: 600;">{{ item.subject_name }}</span> • {{ item.explanation }}
+              </div>
+              <div style="display: flex; justify-content: flex-end;">
+                <a href="{{ url_for('timer.index') }}" class="btn btn-sm btn-secondary" style="font-size: 0.75rem;">Study Now ⏱️</a>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-state-icon">🎉</div>
+          <div class="empty-state-title">No Urgent Priorities</div>
+          <div class="empty-state-desc">You are completely up to date! Add coursework or explore the syllabus.</div>
+          <button onclick="openModal('quick-assignment-modal')" class="btn btn-sm btn-primary">Add New Assignment</button>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Today's Schedule & Classes -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 20px; height: 20px; color: #38bdf8;"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+          Today's Timetable ({{ today.strftime('%A, %b %d') }})
+        </h2>
+        <a href="{{ url_for('timetable.index') }}" class="btn btn-sm btn-secondary">Full Week</a>
+      </div>
+
+      {% if today_classes %}
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+          {% for ev in today_classes %}
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 1rem; border-radius: var(--radius-md); background: var(--bg-sidebar); border-left: 4px solid {{ ev.subject.color if ev.subject else '#3b82f6' }};">
+              <div>
+                <div style="font-weight: 600; font-size: 0.92rem;">{{ ev.title }}</div>
+                <div style="font-size: 0.78rem; color: var(--text-dim);">
+                  {{ ev.location or 'Campus Room' }} • <span style="text-transform: capitalize;">{{ ev.event_type }}</span>
+                </div>
+              </div>
+              <div style="font-weight: 700; font-size: 0.88rem; color: #818cf8;">
+                {{ ev.start_time }} – {{ ev.end_time }}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state" style="padding: 2rem 1rem;">
+          <div class="empty-state-icon">☕</div>
+          <div class="empty-state-title">No Classes Scheduled Today</div>
+          <div class="empty-state-desc">You have no scheduled lectures for today. A great opportunity for deep self-study!</div>
+          <a href="{{ url_for('timetable.index') }}" class="btn btn-sm btn-secondary">View Timetable</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Bottom Row: Upcoming Exams & Deadlines -->
+  <div class="grid-2">
+    <!-- Upcoming Exams -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 20px; height: 20px; color: #a855f7;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          Upcoming Examinations
+        </h2>
+        <a href="{{ url_for('timetable.index') }}" class="btn btn-sm btn-secondary">Add Exam</a>
+      </div>
+
+      {% if upcoming_exams %}
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+          {% for exam in upcoming_exams %}
+            <div style="padding: 0.9rem 1rem; border-radius: var(--radius-md); background: var(--bg-sidebar); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+              <div>
+                <div style="font-weight: 600; font-size: 0.92rem;">{{ exam.title }}</div>
+                <div style="font-size: 0.78rem; color: var(--text-dim);">
+                  {{ exam.subject.name if exam.subject else 'General' }} • {{ exam.exam_date.strftime('%B %d, %Y') }} at {{ exam.start_time }}
+                </div>
+              </div>
+              <div>
+                {% if exam.days_until == 0 %}
+                  <span class="badge badge-high">TODAY!</span>
+                {% elif exam.days_until <= 3 %}
+                  <span class="badge badge-high">{{ exam.days_until }} days left</span>
+                {% else %}
+                  <span class="badge" style="background: rgba(139, 92, 246, 0.2); color: #c084fc;">{{ exam.days_until }} days left</span>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state" style="padding: 2rem 1rem;">
+          <div class="empty-state-icon">📅</div>
+          <div class="empty-state-title">No Upcoming Exams</div>
+          <div class="empty-state-desc">Keep track of your midterms and finals with automatic countdowns.</div>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Approaching Deadlines -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 20px; height: 20px; color: #f43f5e;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
+          Approaching Assignments
+        </h2>
+        <a href="{{ url_for('assignments.index') }}" class="btn btn-sm btn-secondary">All Tasks</a>
+      </div>
+
+      {% if pending_assignments %}
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+          {% for asgn in pending_assignments %}
+            <div style="padding: 0.9rem 1rem; border-radius: var(--radius-md); background: var(--bg-sidebar); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+              <div style="flex: 1; overflow: hidden; padding-right: 0.5rem;">
+                <div style="font-weight: 600; font-size: 0.92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ asgn.title }}</div>
+                <div style="font-size: 0.78rem; color: var(--text-dim);">
+                  {{ asgn.subject.name if asgn.subject else 'General' }} • Due {{ asgn.due_date.strftime('%b %d, %H:%M') }}
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                {% if asgn.is_overdue %}
+                  <span class="badge badge-overdue">OVERDUE</span>
+                {% else %}
+                  <span class="badge badge-{{ asgn.priority }}">{{ asgn.priority|capitalize }}</span>
+                {% endif %}
+                <form method="POST" action="{{ url_for('assignments.toggle_status', assignment_id=asgn.id) }}" style="display: inline;">
+                  <button type="submit" class="btn btn-sm btn-secondary" title="Mark Complete">✓</button>
+                </form>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state" style="padding: 2rem 1rem;">
+          <div class="empty-state-icon">✨</div>
+          <div class="empty-state-title">All Assignments Completed</div>
+          <div class="empty-state-desc">You have no pending assignments on your plate right now!</div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Quick Assignment Modal -->
+<div id="quick-assignment-modal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 style="font-size: 1.15rem; font-weight: 700;">Add New Assignment</h3>
+      <button onclick="closeModal('quick-assignment-modal')" style="background: none; border: none; color: inherit; font-size: 1.25rem; cursor: pointer;">&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('assignments.create') }}">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Assignment Title</label>
+          <input type="text" name="title" class="form-control" placeholder="e.g. DBMS Normalization Proofs" required>
+        </div>
+
+        <div class="grid-2" style="gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label">Subject</label>
+            <select name="subject_id" class="form-control" required>
+              {% for s in subjects %}
+                <option value="{{ s.id }}">{{ s.code }}: {{ s.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Priority</label>
+            <select name="priority" class="form-control">
+              <option value="high">High Priority</option>
+              <option value="medium" selected>Medium Priority</option>
+              <option value="low">Low Priority</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-2" style="gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label">Due Date & Time</label>
+            <input type="datetime-local" name="due_date" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Est. Effort (Hours)</label>
+            <input type="number" step="0.5" name="estimated_hours" class="form-control" value="2.0">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Description / Instructions</label>
+          <textarea name="description" class="form-control" rows="2" placeholder="Key submission instructions..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" onclick="closeModal('quick-assignment-modal')" class="btn btn-secondary">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Assignment</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

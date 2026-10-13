@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Study Groups & Collaboration{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; gap: 2rem;">
+  <!-- Header Bar -->
+  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h1 style="font-size: 1.85rem; font-weight: 800;">Study Groups & Collaborative Goals</h1>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">Join peer study circles, track collaborative revision checklists, and conquer exams together.</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+      <button onclick="openModal('join-group-modal')" class="btn btn-secondary">
+        Join With Code
+      </button>
+      <button onclick="openModal('create-group-modal')" class="btn btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 16px; height: 16px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Create Group
+      </button>
+    </div>
+  </div>
+
+  <!-- Groups Grid -->
+  {% if groups %}
+    <div class="grid-3">
+      {% for g in groups %}
+        <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; padding: 1.5rem;">
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+              <h3 style="font-size: 1.2rem; font-weight: 700;">{{ g.name }}</h3>
+              <span class="badge" style="background: rgba(99, 102, 241, 0.2); color: #818cf8; font-family: monospace;">{{ g.invite_code }}</span>
+            </div>
+
+            {% if g.description %}
+              <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.5;">
+                {{ g.description }}
+              </p>
+            {% endif %}
+
+            <div style="font-size: 0.8rem; color: var(--text-dim); display: flex; gap: 1rem; margin-top: 0.5rem;">
+              <span>👥 {{ g.members.count() }} Members</span>
+              <span>🎯 {{ g.goals.count() }} Goals</span>
+            </div>
+          </div>
+
+          <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end;">
+            <a href="{{ url_for('groups.detail', group_id=g.id) }}" class="btn btn-sm btn-primary" style="width: 100%;">
+              Open Workspace &rarr;
+            </a>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card empty-state">
+      <div class="empty-state-icon">👥</div>
+      <div class="empty-state-title">No Study Groups Joined Yet</div>
+      <div class="empty-state-desc">Collaborate with fellow students on shared revision goals. Create a new study group or join an existing one using an invite code.</div>
+      <div style="display: flex; justify-content: center; gap: 1rem;">
+        <button onclick="openModal('create-group-modal')" class="btn btn-primary">Create Study Group</button>
+        <button onclick="openModal('join-group-modal')" class="btn btn-secondary">Join with Code</button>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Create Group Modal -->
+<div id="create-group-modal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 style="font-size: 1.15rem; font-weight: 700;">Create Collaborative Study Group</h3>
+      <button onclick="closeModal('create-group-modal')" style="background: none; border: none; color: inherit; font-size: 1.25rem; cursor: pointer;">&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('groups.create_group') }}">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Study Group Name</label>
+          <input type="text" name="name" class="form-control" placeholder="e.g. DBMS Semester 4 Study Circle" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description / Purpose</label>
+          <textarea name="description" class="form-control" rows="3" placeholder="e.g. Weekly problem-solving for database design & normalization exam preparation."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" onclick="closeModal('create-group-modal')" class="btn btn-secondary">Cancel</button>
+        <button type="submit" class="btn btn-primary">Create Group</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Join Group Modal -->
+<div id="join-group-modal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 style="font-size: 1.15rem; font-weight: 700;">Join Study Group with Invite Code</h3>
+      <button onclick="closeModal('join-group-modal')" style="background: none; border: none; color: inherit; font-size: 1.25rem; cursor: pointer;">&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('groups.join_group') }}">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Enter 8-Character Invite Code</label>
+          <input type="text" name="invite_code" class="form-control" placeholder="e.g. A1B2C3D4" maxlength="12" style="font-family: monospace; letter-spacing: 2px; text-transform: uppercase;" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" onclick="closeModal('join-group-modal')" class="btn btn-secondary">Cancel</button>
+        <button type="submit" class="btn btn-primary">Join Group</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

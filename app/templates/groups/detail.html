@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block title %}{{ group.name }} — Study Group{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; gap: 2rem;">
+  <!-- Group Header Banner -->
+  <div class="card" style="padding: 1.75rem 2rem; background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.08)); border-color: rgba(99, 102, 241, 0.3);">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+          <a href="{{ url_for('groups.index') }}" style="color: var(--text-dim);">&larr; Back to Groups</a>
+          <span class="badge" style="background: rgba(99, 102, 241, 0.2); color: #818cf8;">Role: {{ membership.role|capitalize }}</span>
+        </div>
+        <h1 style="font-size: 1.85rem; font-weight: 800;">{{ group.name }}</h1>
+        {% if group.description %}
+          <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.35rem; max-width: 700px;">
+            {{ group.description }}
+          </p>
+        {% endif %}
+      </div>
+
+      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.75rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem; background: var(--bg-card); padding: 0.5rem 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <span style="font-size: 0.8rem; color: var(--text-dim);">Invite Code:</span>
+          <code style="font-size: 1rem; font-weight: 700; color: #818cf8; letter-spacing: 1px;">{{ group.invite_code }}</code>
+          <button onclick="navigator.clipboard.writeText('{{ group.invite_code }}'); alert('Invite code copied to clipboard!');" class="btn btn-sm btn-secondary" style="padding: 0.2rem 0.5rem;">Copy</button>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem;">
+          <button onclick="openModal('add-goal-modal')" class="btn btn-sm btn-primary">+ New Shared Goal</button>
+          <form method="POST" action="{{ url_for('groups.leave_group', group_id=group.id) }}" onsubmit="return confirm('Leave this study group?');">
+            <button type="submit" class="btn btn-sm btn-secondary" style="color: #f87171;">Leave Group</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="grid-template-columns: 2fr 1fr; align-items: start;">
+    <!-- Shared Study Goals & Collaborative Checklists -->
+    <div class="card" style="padding: 1.5rem;">
+      <div class="card-header">
+        <h2 class="card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 20px; height: 20px; color: #10b981;"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
+          Shared Goals & Checklists
+        </h2>
+        <button onclick="openModal('add-goal-modal')" class="btn btn-sm btn-secondary">+ Add Goal</button>
+      </div>
+
+      {% if goals %}
+        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+          {% for goal in goals %}
+            <div style="background: var(--bg-sidebar); border-radius: var(--radius-md); border: 1px solid var(--border-color); padding: 1.25rem;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                <div>
+                  <h3 style="font-size: 1.1rem; font-weight: 700; {% if goal.is_completed %}text-decoration: line-through; color: var(--text-muted);{% endif %}">
+                    {{ goal.title }}
+                  </h3>
+                  {% if goal.description %}
+                    <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 0.2rem;">{{ goal.description }}</p>
+                  {% endif %}
+                  {% if goal.target_date %}
+                    <div style="font-size: 0.78rem; color: #818cf8; margin-top: 0.35rem;">🎯 Target Date: {{ goal.target_date.strftime('%B %d, %Y') }}</div>
+                  {% endif %}
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                  <form method="POST" action="{{ url_for('groups.toggle_goal', group_id=group.id, goal_id=goal.id) }}">
+                    <button type="submit" class="btn btn-sm btn-secondary" style="font-size: 0.75rem;">
+                      {% if goal.is_completed %}✓ Completed{% else %}Mark Complete{% endif %}
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              <!-- Goal Progress Bar -->
+              <div style="margin: 0.75rem 0;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-dim); margin-bottom: 0.25rem;">
+                  <span>Goal Progress</span>
+                  <strong>{{ goal.progress_percentage }}%</strong>
+                </div>
+                <div class="progress-bar-container" style="height: 6px;">
+                  <div class="progress-bar-fill" style="width: {{ goal.progress_percentage }}%;"></div>
+                </div>
+              </div>
+
+              <!-- Subtasks Checklist -->
+              <div style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 0.75rem;">
+                <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: var(--text-dim); margin-bottom: 0.5rem;">
+                  Actionable Checklist ({{ goal.tasks.count() }})
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                  {% for t in goal.tasks %}
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.4rem 0.65rem; background: var(--bg-card); border-radius: var(--radius-sm); font-size: 0.85rem;">
+                      <div style="display: flex; align-items: center; gap: 0.6rem;">
+                        <form method="POST" action="{{ url_for('groups.toggle_task', group_id=group.id, task_id=t.id) }}">
+                          <input type="checkbox" onchange="this.form.submit()" {% if t.is_completed %}checked{% endif %} style="accent-color: var(--primary); cursor: pointer;">
+                        </form>
+                        <span style="{% if t.is_completed %}text-decoration: line-through; color: var(--text-dim);{% endif %}">{{ t.title }}</span>
+                      </div>
+                      {% if t.assigned_user %}
+                        <span class="badge" style="background: rgba(99,102,241,0.15); color: #818cf8; font-size: 0.7rem;">{{ t.assigned_user.full_name }}</span>
+                      {% endif %}
+                    </div>
+                  {% endfor %}
+                </div>
+
+                <!-- Add Task Form -->
+                <form method="POST" action="{{ url_for('groups.create_task', group_id=group.id, goal_id=goal.id) }}" style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
+                  <input type="text" name="title" class="form-control" placeholder="Add checklist task..." style="padding: 0.4rem 0.75rem; font-size: 0.82rem;" required>
+                  <button type="submit" class="btn btn-sm btn-secondary">+ Add</button>
+                </form>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-state-icon">🎯</div>
+          <div class="empty-state-title">No Shared Goals Set</div>
+          <div class="empty-state-desc">Define a collaborative revision goal (e.g. "Review all 5 DBMS modules before midterm") for the group.</div>
+          <button onclick="openModal('add-goal-modal')" class="btn btn-primary">Create Shared Goal</button>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Group Members Sidebar -->
+    <div class="card" style="padding: 1.5rem;">
+      <div class="card-header">
+        <h2 class="card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 20px; height: 20px; color: #818cf8;"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          Study Circle Members ({{ members|length }})
+        </h2>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        {% for m in members %}
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 0.85rem; background: var(--bg-sidebar); border-radius: var(--radius-md);">
+            <div style="display: flex; align-items: center; gap: 0.65rem;">
+              <div class="user-avatar" style="width: 32px; height: 32px; font-size: 0.85rem;">{{ m.user.full_name[:1] }}</div>
+              <div>
+                <div style="font-weight: 600; font-size: 0.88rem;">{{ m.user.full_name }}</div>
+                <div style="font-size: 0.72rem; color: var(--text-dim);">Joined {{ m.joined_at.strftime('%b %d') }}</div>
+              </div>
+            </div>
+            <span class="badge" style="background: rgba(99,102,241,0.15); color: #818cf8; font-size: 0.7rem;">{{ m.role|capitalize }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Goal Modal -->
+<div id="add-goal-modal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 style="font-size: 1.15rem; font-weight: 700;">Create Shared Study Goal</h3>
+      <button onclick="closeModal('add-goal-modal')" style="background: none; border: none; color: inherit; font-size: 1.25rem; cursor: pointer;">&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('groups.create_goal', group_id=group.id) }}">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Goal Title</label>
+          <input type="text" name="title" class="form-control" placeholder="e.g. Master Normalization & BCNF Proofs" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Target Completion Date</label>
+          <input type="date" name="target_date" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description / Scope</label>
+          <textarea name="description" class="form-control" rows="2" placeholder="Details on what the group plans to achieve..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" onclick="closeModal('add-goal-modal')" class="btn btn-secondary">Cancel</button>
+        <button type="submit" class="btn btn-primary">Establish Goal</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

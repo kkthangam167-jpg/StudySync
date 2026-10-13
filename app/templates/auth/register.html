@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Student Registration{% endblock %}
+
+{% block public_content %}
+<div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2.5rem 1rem; background: radial-gradient(circle at 50% 20%, rgba(99, 102, 241, 0.12) 0%, rgba(9, 13, 22, 1) 70%);">
+  <div class="card" style="max-width: 500px; width: 100%; padding: 2.25rem;">
+    <div style="text-align: center; margin-bottom: 2rem;">
+      <a href="{{ url_for('dashboard.landing') }}" style="display: inline-flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+        <div class="brand-icon">S</div>
+        <span class="brand-name" style="font-size: 1.5rem; font-weight: 800;">StudySync</span>
+      </a>
+      <h1 style="font-size: 1.4rem; font-weight: 700;">Create Your Account</h1>
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 0.25rem;">Begin your organized academic semester</p>
+    </div>
+
+    <!-- Flash message display in public view -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div style="margin-bottom: 1.25rem;">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }}" style="font-size: 0.85rem; padding: 0.65rem 1rem;">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('auth.register') }}">
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input type="text" name="full_name" class="form-control" placeholder="Alex Chen" required>
+      </div>
+
+      <div class="grid-2" style="gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          <input type="text" name="username" class="form-control" placeholder="alex24" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" name="email" class="form-control" placeholder="alex@college.edu" required>
+        </div>
+      </div>
+
+      <div class="grid-2" style="gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label">Academic Program</label>
+          <input type="text" name="program" class="form-control" value="B.E. Computer Science & Engineering" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Semester</label>
+          <select name="semester" class="form-control">
+            <option value="Semester 1">Semester 1</option>
+            <option value="Semester 2">Semester 2</option>
+            <option value="Semester 3">Semester 3</option>
+            <option value="Semester 4" selected>Semester 4</option>
+            <option value="Semester 5">Semester 5</option>
+            <option value="Semester 6">Semester 6</option>
+            <option value="Semester 7">Semester 7</option>
+            <option value="Semester 8">Semester 8</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" name="password" class="form-control" placeholder="At least 6 characters" minlength="6" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.75rem; margin-top: 0.5rem;">Create Student Account</button>
+    </form>
+
+    <div style="text-align: center; margin-top: 1.5rem; font-size: 0.88rem; color: var(--text-muted);">
+      Already have an account? 
+      <a href="{{ url_for('auth.login') }}" style="color: var(--primary); font-weight: 600;">Sign In</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Profile & Preferences{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 0 auto;">
+  <div style="margin-bottom: 2rem;">
+    <h1 style="font-size: 1.85rem; font-weight: 700;">Account Settings & Study Habits</h1>
+    <p style="color: var(--text-muted); font-size: 0.95rem;">Manage your profile, academic availability, and intelligent scheduling parameters.</p>
+  </div>
+
+  <div class="grid-2" style="align-items: start;">
+    <!-- Profile & Preferences Form -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 20px; height: 20px;"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Academic Profile
+        </h2>
+      </div>
+
+      <form method="POST" action="{{ url_for('auth.profile') }}">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" name="full_name" class="form-control" value="{{ user.full_name }}" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Academic Program</label>
+          <input type="text" name="program" class="form-control" value="{{ user.program }}" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Semester</label>
+          <select name="semester" class="form-control">
+            {% for s in ['Semester 1', 'Semester 2', 'Semester 3', 'Semester 4', 'Semester 5', 'Semester 6', 'Semester 7', 'Semester 8'] %}
+              <option value="{{ s }}" {% if user.semester == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 1.5rem 0;">
+
+        <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #818cf8;">Smart Scheduling Parameters</h3>
+
+        <div class="form-group">
+          <label class="form-label">Preferred Study Hours</label>
+          <select name="preferred_study_hours" class="form-control">
+            <option value="Morning (08:00 - 12:00)" {% if 'Morning' in user.preferred_study_hours %}selected{% endif %}>Morning (08:00 - 12:00)</option>
+            <option value="Afternoon (14:00 - 18:00)" {% if 'Afternoon' in user.preferred_study_hours %}selected{% endif %}>Afternoon (14:00 - 18:00)</option>
+            <option value="Evening (18:00 - 22:00)" {% if 'Evening' in user.preferred_study_hours %}selected{% endif %}>Evening (18:00 - 22:00)</option>
+            <option value="Late Night (21:00 - 01:00)" {% if 'Late Night' in user.preferred_study_hours %}selected{% endif %}>Late Night (21:00 - 01:00)</option>
+          </select>
+          <small style="color: var(--text-dim); font-size: 0.78rem;">The planner schedules study sessions within this preferred window.</small>
+        </div>
+
+        <div class="grid-2" style="gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label">Daily Available Time (Hours)</label>
+            <input type="number" step="0.5" min="1" max="12" name="daily_available_hours" class="form-control" value="{{ user.daily_available_hours }}" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Focus Block (Minutes)</label>
+            <input type="number" min="15" max="90" name="focus_duration_minutes" class="form-control" value="{{ user.focus_duration_minutes }}" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Default Theme</label>
+          <select name="theme_preference" class="form-control">
+            <option value="dark" {% if user.theme_preference == 'dark' %}selected{% endif %}>Dark Navy (Recommended)</option>
+            <option value="light" {% if user.theme_preference == 'light' %}selected{% endif %}>Light Mode</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-top: 1rem;">
+          <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer;">
+            <input type="checkbox" name="in_app_notifications" {% if user.in_app_notifications %}checked{% endif %} style="accent-color: var(--primary);">
+            <span style="font-size: 0.88rem;">Enable in-app reminders for upcoming deadlines and rescheduled sessions</span>
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="margin-top: 1rem; width: 100%;">Save Profile Settings</button>
+      </form>
+    </div>
+
+    <!-- Quick Tools & Dangerous Actions -->
+    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+      <!-- Demo Data Loader -->
+      <div class="card" style="border-color: rgba(99, 102, 241, 0.4);">
+        <div class="card-header">
+          <h2 class="card-title" style="color: #818cf8;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 20px; height: 20px;"><path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/></svg>
+            Demo / Test Data Seed
+          </h2>
+        </div>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.6;">
+          For evaluation: Populate your account with realistic 2nd year B.E. Computer Science courses (DBMS, Algorithms, OS, Networks), upcoming exams, timetable slots, and assignments!
+        </p>
+        <form method="POST" action="{{ url_for('auth.seed_demo_data') }}">
+          <button type="submit" class="btn btn-secondary" style="width: 100%; border-color: rgba(99, 102, 241, 0.5); color: #818cf8;">
+            🚀 Load CSE Sample Records
+          </button>
+        </form>
+      </div>
+
+      <!-- Account Summary -->
+      <div class="card">
+        <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.75rem;">Account Overview</h3>
+        <div style="font-size: 0.88rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.5rem;">
+          <div><strong>Username:</strong> {{ user.username }}</div>
+          <div><strong>Email:</strong> {{ user.email }}</div>
+          <div><strong>Registered On:</strong> {{ user.created_at.strftime('%B %d, %Y') }}</div>
+          <div><strong>Data Isolation:</strong> 100% Encrypted & Account-Isolated</div>
+        </div>
+      </div>
+
+      <!-- Delete Account -->
+      <div class="card" style="border-color: rgba(239, 68, 68, 0.4);">
+        <h3 style="font-size: 1rem; font-weight: 600; color: #f87171; margin-bottom: 0.5rem;">Danger Zone</h3>
+        <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 1rem;">
+          Permanently delete your account and all associated timetables, syllabus notes, and assignment records. This action cannot be undone.
+        </p>
+        <form method="POST" action="{{ url_for('auth.delete_account') }}" onsubmit="return confirm('Are you completely sure you want to permanently delete your StudySync account? All your academic data will be permanently wiped.');">
+          <button type="submit" class="btn btn-danger btn-sm" style="width: 100%;">Permanently Delete Account</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

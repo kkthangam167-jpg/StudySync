@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+{% block title %}Syllabus & Revision Tracker{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; gap: 2rem;">
+  <!-- Header Bar -->
+  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h1 style="font-size: 1.85rem; font-weight: 800;">Syllabus & Revision Tracker</h1>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">Track curriculum coverage, confidence ratings, and schedule revision cycles.</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+      <button onclick="openModal('add-subject-modal')" class="btn btn-secondary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 16px; height: 16px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Subject
+      </button>
+      {% if selected_subject %}
+        <button onclick="openModal('add-unit-modal')" class="btn btn-primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 16px; height: 16px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Unit
+        </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Subject Selector Tabs -->
+  {% if subjects %}
+    <div style="display: flex; gap: 0.75rem; overflow-x: auto; padding-bottom: 0.5rem;">
+      {% for s in subjects %}
+        <a href="{{ url_for('syllabus.index', subject_id=s.id) }}" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.25rem; border-radius: var(--radius-full); font-size: 0.88rem; font-weight: 600; border: 1px solid {% if selected_subject and selected_subject.id == s.id %}var(--primary){% else %}var(--border-color){% endif %}; background: {% if selected_subject and selected_subject.id == s.id %}var(--primary-glow){% else %}var(--bg-card){% endif %}; color: {% if selected_subject and selected_subject.id == s.id %}#818cf8{% else %}var(--text-muted){% endif %}; white-space: nowrap; transition: var(--transition);">
+          <span style="width: 10px; height: 10px; border-radius: 50%; background: {{ s.color }};"></span>
+          <span>{{ s.code }}: {{ s.name }}</span>
+          <span style="font-size: 0.75rem; opacity: 0.75;">({{ s.syllabus_progress }}%)</span>
+        </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <!-- Active Subject Syllabus Content -->
+  {% if selected_subject %}
+    <div class="card" style="padding: 1.5rem;">
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <h2 style="font-size: 1.4rem; font-weight: 700;">{{ selected_subject.code }} — {{ selected_subject.name }}</h2>
+            <span class="badge" style="background: rgba(99, 102, 241, 0.2); color: #818cf8;">{{ selected_subject.credits }} Credits</span>
+          </div>
+          <div style="font-size: 0.85rem; color: var(--text-dim); margin-top: 0.25rem;">
+            Faculty: {{ selected_subject.professor or 'Not assigned' }} • Semester: {{ selected_subject.semester or current_user.semester }}
+          </div>
+        </div>
+
+        <div style="min-width: 200px;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.35rem;">
+            <span>Syllabus Completed</span>
+            <strong>{{ selected_subject.syllabus_progress }}%</strong>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar-fill" style="width: {{ selected_subject.syllabus_progress }}%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Units & Topics List -->
+      {% if units %}
+        <div style="display: flex; flex-direction: column; gap: 1.5rem; margin-top: 1.5rem;">
+          {% for unit in units %}
+            <div style="background: var(--bg-sidebar); border-radius: var(--radius-md); border: 1px solid var(--border-color); padding: 1.25rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+                <div>
+                  <h3 style="font-size: 1.1rem; font-weight: 700;">{{ unit.title }}</h3>
+                  {% if unit.description %}
+                    <p style="font-size: 0.82rem; color: var(--text-dim); margin-top: 0.2rem;">{{ unit.description }}</p>
+                  {% endif %}
+                </div>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                  <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">Unit Progress: {{ unit.progress }}%</span>
+                  <button onclick="openAddTopicModal({{ unit.id }}, '{{ unit.title|escape }}')" class="btn btn-sm btn-secondary">+ Topic</button>
+                </div>
+              </div>
+
+              <!-- Topics inside unit -->
+              {% set unit_topics = unit.topics.all() %}
+              {% if unit_topics %}
+                <div style="display: flex; flex-direction: column; gap: 0.65rem;">
+                  {% for topic in unit_topics %}
+                    <div style="background: var(--bg-card); border-radius: var(--radius-sm); border: 1px solid var(--border-color); padding: 0.85rem 1rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
+                      <div style="flex: 1; min-width: 220px;">
+                        <div style="font-weight: 600; font-size: 0.92rem; color: var(--text-main);">
+                          {{ topic.title }}
+                        </div>
+                        <div style="font-size: 0.78rem; color: var(--text-dim); display: flex; gap: 1rem; margin-top: 0.2rem;">
+                          <span>Confidence: <strong>{{ topic.confidence_score }}/5</strong></span>
+                          {% if topic.last_revised_at %}
+                            <span>Last Revised: {{ topic.last_revised_at.strftime('%b %d') }}</span>
+                          {% else %}
+                            <span>Not revised yet</span>
+                          {% endif %}
+                          {% if topic.resource_url %}
+                            <a href="{{ topic.resource_url }}" target="_blank" rel="noopener" style="color: #38bdf8;">Resource ↗</a>
+                          {% endif %}
+                        </div>
+                      </div>
+
+                      <div style="display: flex; align-items: center; gap: 0.65rem;">
+                        <!-- Status Update Form -->
+                        <form method="POST" action="{{ url_for('syllabus.update_topic', topic_id=topic.id) }}" style="display: flex; gap: 0.5rem; align-items: center;">
+                          <select name="status" class="form-control" style="padding: 0.35rem 0.65rem; font-size: 0.8rem; width: auto;" onchange="this.form.submit()">
+                            <option value="not_started" {% if topic.status == 'not_started' %}selected{% endif %}>Not Started</option>
+                            <option value="learning" {% if topic.status == 'learning' %}selected{% endif %}>Learning</option>
+                            <option value="completed" {% if topic.status == 'completed' %}selected{% endif %}>Completed</option>
+                            <option value="needs_revision" {% if topic.status == 'needs_revision' %}selected{% endif %}>Needs Revision</option>
+                          </select>
+
+                          <select name="confidence_score" class="form-control" style="padding: 0.35rem 0.65rem; font-size: 0.8rem; width: auto;" onchange="this.form.submit()">
+                            <option value="1" {% if topic.confidence_score == 1 %}selected{% endif %}>⭐ 1/5</option>
+                            <option value="2" {% if topic.confidence_score == 2 %}selected{% endif %}>⭐ 2/5</option>
+                            <option value="3" {% if topic.confidence_score == 3 %}selected{% endif %}>⭐ 3/5</option>
+                            <option value="4" {% if topic.confidence_score == 4 %}selected{% endif %}>⭐ 4/5</option>
+                            <option value="5" {% if topic.confidence_score == 5 %}selected{% endif %}>⭐ 5/5</option>
+                          </select>
+
+                          <button type="submit" name="action" value="revised_now" class="btn btn-sm btn-secondary" title="Mark Revised Today" style="font-size: 0.75rem;">
+                            🔄 Revised
+                          </button>
+                        </form>
+
+                        <!-- Delete Topic -->
+                        <form method="POST" action="{{ url_for('syllabus.delete_topic', topic_id=topic.id) }}" onsubmit="return confirm('Delete this topic?');">
+                          <button type="submit" style="background: none; border: none; color: var(--text-dim); cursor: pointer; padding: 0.35rem;">&times;</button>
+                        </form>
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <div style="font-size: 0.85rem; color: var(--text-dim); text-align: center; padding: 1rem;">
+                  No topics added to this unit yet.
+                </div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-state-icon">📂</div>
+          <div class="empty-state-title">No Units Created for {{ selected_subject.code }}</div>
+          <div class="empty-state-desc">Break down your syllabus into units or modules to track topics methodically.</div>
+          <button onclick="openModal('add-unit-modal')" class="btn btn-primary">Add Unit 1</button>
+        </div>
+      {% endif %}
+    </div>
+  {% else %}
+    <div class="card empty-state">
+      <div class="empty-state-icon">📚</div>
+      <div class="empty-state-title">No Academic Subjects Added</div>
+      <div class="empty-state-desc">Create your courses (e.g. DBMS, Data Structures, Operating Systems) to organize your syllabus.</div>
+      <button onclick="openModal('add-subject-modal')" class="btn btn-primary">Add Your First Subject</button>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Add Subject Modal -->
+<div id="add-subject-modal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 style="font-size: 1.15rem; font-weight: 700;">Add Academic Subject</h3>
+      <button onclick="closeModal('add-subject-modal')" style="background: none; border: none; color: inherit; font-size: 1.25rem; cursor: pointer;">&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('syllabus.create_subject') }}">
+      <div class="modal-body">
+        <div class="grid-2" style="gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label">Subject Code</label>
+            <input type="text" name="code" class="form-control" placeholder="e.g. CS201" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Credits</label>
+            <input type="number" name="credits" class="form-control" value="4" min="1" max="6" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Subject Name</label>
+          <input type="text" name="name" class="form-control" placeholder="e.g. Database Management Systems" required>
+        </div>
+
+        <div class="grid-2" style="gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label">Faculty / Professor</label>
+            <input type="text" name="professor" class="form-control" placeholder="e.g. Dr. Sharma">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Color Tag</label>
+            <select name="color" class="form-control">
+              <option value="#6366F1">Indigo (#6366F1)</option>
+              <option value="#EC4899">Pink (#EC4899)</option>
+              <option value="#3B82F6">Blue (#3B82F6)</option>
+              <option value="#10B981">Green (#10B981)</option>
+              <option value="#F59E0B">Amber (#F59E0B)</option>
+              <option value="#8B5CF6">Purple (#8B5CF6)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" onclick="closeModal('add-subject-modal')" class="btn btn-secondary">Cancel</button>
+        <button type="submit" class="btn btn-primary">Create Subject</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Add Unit Modal -->
+<div id="add-unit-modal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 style="font-size: 1.15rem; font-weight: 700;">Add Unit to {{ selected_subject.code if selected_subject else '' }}</h3>
+      <button onclick="closeModal('add-unit-modal')" style="background: none; border: none; color: inherit; font-size: 1.25rem; cursor: pointer;">&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('syllabus.create_unit') }}">
+      <input type="hidden" name="subject_id" value="{{ selected_subject.id if selected_subject else '' }}">
+      <div class="modal-body">
+        <div class="grid-2" style="gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label">Unit Number</label>
+            <input type="number" name="unit_number" class="form-control" value="{{ (units|length) + 1 }}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Unit Title</label>
+            <input type="text" name="title" class="form-control" placeholder="e.g. Unit 1: Relational Model" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description / Core Objective</label>
+          <textarea name="description" class="form-control" rows="2" placeholder="Brief outline of topics in this unit..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" onclick="closeModal('add-unit-modal')" class="btn btn-secondary">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Unit</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Add Topic Modal -->
+<div id="add-topic-modal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 style="font-size: 1.15rem; font-weight: 700;" id="add-topic-modal-title">Add Syllabus Topic</h3>
+      <button onclick="closeModal('add-topic-modal')" style="background: none; border: none; color: inherit; font-size: 1.25rem; cursor: pointer;">&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('syllabus.create_topic') }}">
+      <input type="hidden" name="unit_id" id="modal-topic-unit-id" value="">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Topic Title</label>
+          <input type="text" name="title" class="form-control" placeholder="e.g. BCNF Lossless Decomposition" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Reference Link / Notes (Optional)</label>
+          <input type="url" name="resource_url" class="form-control" placeholder="https://geeksforgeeks.org/... or lecture slides">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Initial Notes</label>
+          <textarea name="notes" class="form-control" rows="2" placeholder="Important formulas or lecture highlights..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" onclick="closeModal('add-topic-modal')" class="btn btn-secondary">Cancel</button>
+        <button type="submit" class="btn btn-primary">Add Topic</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function openAddTopicModal(unitId, unitTitle) {
+  document.getElementById('modal-topic-unit-id').value = unitId;
+  document.getElementById('add-topic-modal-title').textContent = 'Add Topic to ' + unitTitle;
+  openModal('add-topic-modal');
+}
+</script>
+{% endblock %}

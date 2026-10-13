@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+{% block title %}Focus Timer & Pomodoro{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; gap: 2rem; max-width: 900px; margin: 0 auto;">
+  <!-- Header Bar -->
+  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h1 style="font-size: 1.85rem; font-weight: 800;">Focus Timer</h1>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">Deep work intervals with verified session logging and cognitive breaks.</p>
+    </div>
+    <div style="display: flex; gap: 1.5rem; font-size: 0.9rem;">
+      <div>Today: <strong style="color: #818cf8;">{{ today_hours }} hrs</strong></div>
+      <div>This Week: <strong style="color: #34d399;">{{ weekly_hours }} hrs</strong></div>
+    </div>
+  </div>
+
+  <!-- Timer Card -->
+  <div class="card" style="text-align: center; padding: 3rem 2rem; background: radial-gradient(circle at 50% 30%, rgba(99, 102, 241, 0.12) 0%, rgba(19, 29, 51, 1) 75%);">
+    <!-- Mode Pills -->
+    <div style="display: inline-flex; background: var(--bg-sidebar); padding: 0.35rem; border-radius: var(--radius-full); border: 1px solid var(--border-color); margin-bottom: 2.5rem;">
+      <button type="button" class="timer-mode-btn active" onclick="switchTimerMode('focus', 25)" id="mode-focus" style="padding: 0.5rem 1.25rem; border-radius: var(--radius-full); border: none; background: var(--primary); color: white; font-weight: 600; font-size: 0.88rem; cursor: pointer;">
+        Focus Session (25m)
+      </button>
+      <button type="button" class="timer-mode-btn" onclick="switchTimerMode('short_break', 5)" id="mode-short-break" style="padding: 0.5rem 1.25rem; border-radius: var(--radius-full); border: none; background: transparent; color: var(--text-muted); font-weight: 600; font-size: 0.88rem; cursor: pointer;">
+        Short Break (5m)
+      </button>
+      <button type="button" class="timer-mode-btn" onclick="switchTimerMode('long_break', 15)" id="mode-long-break" style="padding: 0.5rem 1.25rem; border-radius: var(--radius-full); border: none; background: transparent; color: var(--text-muted); font-weight: 600; font-size: 0.88rem; cursor: pointer;">
+        Long Break (15m)
+      </button>
+    </div>
+
+    <!-- Timer Digits -->
+    <div style="font-size: 6rem; font-weight: 800; font-family: monospace; letter-spacing: -2px; margin-bottom: 1.5rem; text-shadow: 0 4px 20px var(--primary-glow);" id="timer-display">
+      25:00
+    </div>
+
+    <!-- Task Association Inputs -->
+    <div style="max-width: 480px; margin: 0 auto 2rem; display: flex; gap: 0.75rem;">
+      <select id="timer-subject-select" class="form-control" style="flex: 1;">
+        <option value="">General Academic Study</option>
+        {% for s in subjects %}
+          <option value="{{ s.id }}">{{ s.code }}: {{ s.name }}</option>
+        {% endfor %}
+      </select>
+      <input type="text" id="timer-task-title" class="form-control" placeholder="What are you focusing on?" style="flex: 1.5;">
+    </div>
+
+    <!-- Control Buttons -->
+    <div style="display: flex; justify-content: center; gap: 1rem;">
+      <button id="btn-start-timer" onclick="startTimer()" class="btn btn-primary" style="padding: 0.85rem 2.5rem; font-size: 1.05rem;">
+        Start Focus
+      </button>
+      <button id="btn-pause-timer" onclick="pauseTimer()" class="btn btn-secondary" style="padding: 0.85rem 1.75rem; display: none;">
+        Pause
+      </button>
+      <button id="btn-reset-timer" onclick="resetTimer()" class="btn btn-secondary" style="padding: 0.85rem 1.75rem;">
+        Reset
+      </button>
+    </div>
+  </div>
+
+  <!-- Recent Logged Sessions -->
+  <div class="card" style="padding: 1.5rem;">
+    <div class="card-header">
+      <h2 class="card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 20px; height: 20px; color: #818cf8;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Recent Completed Sessions
+      </h2>
+      <a href="{{ url_for('analytics.index') }}" class="btn btn-sm btn-secondary">Analytics & History</a>
+    </div>
+
+    {% if recent_sessions %}
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        {% for s in recent_sessions %}
+          <div style="padding: 0.85rem 1rem; border-radius: var(--radius-md); background: var(--bg-sidebar); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <div style="font-weight: 600; font-size: 0.92rem;">{{ s.task_title }}</div>
+              <div style="font-size: 0.78rem; color: var(--text-dim);">
+                {{ s.subject.name if s.subject else 'General' }} • {{ s.started_at.strftime('%B %d, %H:%M') }}
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
+                {{ s.duration_minutes }} minutes
+              </span>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <div class="empty-state-icon">⏱️</div>
+        <div class="empty-state-title">No Focus Sessions Logged Yet</div>
+        <div class="empty-state-desc">Hit Start Focus above to log your first verified study block and unlock milestone achievements!</div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let timerInterval = null;
+let currentMode = 'focus';
+let totalSeconds = 25 * 60;
+let remainingSeconds = 25 * 60;
+let isRunning = false;
+
+// Initialize or resume from localStorage
+const savedTimer = localStorage.getItem('studysync-timer');
+if (savedTimer) {
+  try {
+    const parsed = JSON.parse(savedTimer);
+    if (parsed.remainingSeconds > 0) {
+      currentMode = parsed.mode || 'focus';
+      totalSeconds = parsed.totalSeconds || 25 * 60;
+      remainingSeconds = parsed.remainingSeconds;
+      updateDisplay();
+    }
+  } catch (e) {}
+}
+
+function updateDisplay() {
+  const m = Math.floor(remainingSeconds / 60).toString().padStart(2, '0');
+  const s = (remainingSeconds % 60).toString().padStart(2, '0');
+  document.getElementById('timer-display').textContent = `${m}:${s}`;
+  document.title = `(${m}:${s}) Focus Timer — StudySync`;
+}
+
+function switchTimerMode(mode, minutes) {
+  if (isRunning) {
+    if (!confirm('Switching modes will reset your current timer. Continue?')) return;
+    pauseTimer();
+  }
+
+  currentMode = mode;
+  totalSeconds = minutes * 60;
+  remainingSeconds = totalSeconds;
+
+  document.querySelectorAll('.timer-mode-btn').forEach(b => {
+    b.style.background = 'transparent';
+    b.style.color = 'var(--text-muted)';
+  });
+
+  const activeBtn = mode === 'focus' ? document.getElementById('mode-focus') :
+                    mode === 'short_break' ? document.getElementById('mode-short-break') :
+                    document.getElementById('mode-long-break');
+  activeBtn.style.background = 'var(--primary)';
+  activeBtn.style.color = 'white';
+
+  updateDisplay();
+}
+
+function startTimer() {
+  if (isRunning) return;
+  isRunning = true;
+
+  document.getElementById('btn-start-timer').style.display = 'none';
+  document.getElementById('btn-pause-timer').style.display = 'inline-flex';
+
+  timerInterval = setInterval(() => {
+    remainingSeconds--;
+    updateDisplay();
+
+    // Cache state
+    localStorage.setItem('studysync-timer', JSON.stringify({
+      mode: currentMode,
+      totalSeconds: totalSeconds,
+      remainingSeconds: remainingSeconds
+    }));
+
+    if (remainingSeconds <= 0) {
+      clearInterval(timerInterval);
+      isRunning = false;
+      localStorage.removeItem('studysync-timer');
+      finishSession();
+    }
+  }, 1000);
+}
+
+function pauseTimer() {
+  if (!isRunning) return;
+  isRunning = false;
+  clearInterval(timerInterval);
+  document.getElementById('btn-start-timer').style.display = 'inline-flex';
+  document.getElementById('btn-pause-timer').style.display = 'none';
+}
+
+function resetTimer() {
+  pauseTimer();
+  remainingSeconds = totalSeconds;
+  localStorage.removeItem('studysync-timer');
+  updateDisplay();
+}
+
+async function finishSession() {
+  const durationMins = Math.round(totalSeconds / 60);
+  const subjectId = document.getElementById('timer-subject-select').value;
+  const taskTitle = document.getElementById('timer-task-title').value || 'Focus Session';
+
+  alert(`🎉 ${currentMode === 'focus' ? 'Focus Session' : 'Break'} Complete! Saving to your academic record...`);
+
+  try {
+    const res = await fetch('{{ url_for("timer.save_session") }}', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        duration_minutes: durationMins,
+        subject_id: subjectId,
+        task_title: taskTitle,
+        session_type: currentMode
+      })
+    });
+    const data = await res.json();
+    if (data.new_achievements && data.new_achievements.length > 0) {
+      alert('🏆 New Achievement Unlocked: ' + data.new_achievements.join(', '));
+    }
+    window.location.reload();
+  } catch (err) {
+    alert('Session finished but failed to sync to server: ' + err);
+  }
+}
+</script>
+{% endblock %}

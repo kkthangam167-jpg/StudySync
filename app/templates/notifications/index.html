@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Notifications & Alerts{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; gap: 2rem; max-width: 800px; margin: 0 auto;">
+  <!-- Header Bar -->
+  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h1 style="font-size: 1.85rem; font-weight: 800;">Notifications & Reminders</h1>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">Approaching submission deadlines, examination alerts, and rescheduling updates.</p>
+    </div>
+    {% if notifications %}
+      <form method="POST" action="{{ url_for('notifications.mark_all_read') }}">
+        <button type="submit" class="btn btn-secondary btn-sm">Mark All as Read</button>
+      </form>
+    {% endif %}
+  </div>
+
+  <!-- Notifications List -->
+  {% if notifications %}
+    <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+      {% for notif in notifications %}
+        <div class="card" style="padding: 1.15rem 1.5rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; border-left: 4px solid {% if notif.is_read %}var(--border-color){% else %}var(--primary){% endif %}; opacity: {% if notif.is_read %}0.75{% else %}1{% endif %};">
+          <div style="flex: 1;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+              <span style="font-weight: 700; font-size: 0.95rem;">{{ notif.title }}</span>
+              {% if not notif.is_read %}
+                <span class="badge" style="background: rgba(99,102,241,0.25); color: #818cf8; font-size: 0.65rem;">NEW</span>
+              {% endif %}
+            </div>
+
+            <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5;">
+              {{ notif.message }}
+            </p>
+
+            <div style="font-size: 0.76rem; color: var(--text-dim); margin-top: 0.5rem;">
+              {{ notif.created_at.strftime('%B %d, %Y at %H:%M') }}
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 0.65rem;">
+            {% if notif.link_url %}
+              <a href="{{ notif.link_url }}" class="btn btn-sm btn-primary">View</a>
+            {% endif %}
+            
+            {% if not notif.is_read %}
+              <button onclick="markAsRead({{ notif.id }}, this)" class="btn btn-sm btn-secondary" title="Mark Read">✓</button>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card empty-state">
+      <div class="empty-state-icon">🔔</div>
+      <div class="empty-state-title">No Notifications Yet</div>
+      <div class="empty-state-desc">You're completely caught up! We will notify you when assignments approach or when planned study sessions need rescheduling.</div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+async function markAsRead(notifId, btn) {
+  try {
+    const res = await fetch(`/notifications/${notifId}/mark-read`, { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      btn.closest('.card').style.opacity = '0.75';
+      btn.remove();
+    }
+  } catch (err) {
+    console.error('Error marking as read:', err);
+  }
+}
+</script>
+{% endblock %}

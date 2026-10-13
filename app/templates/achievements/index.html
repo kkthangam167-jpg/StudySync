@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Milestone Achievements & Consistency{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; gap: 2rem;">
+  <!-- Header Bar -->
+  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h1 style="font-size: 1.85rem; font-weight: 800;">Academic Achievements & Consistency</h1>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">Empirical milestone badges awarded from your real study sessions and assignment completions.</p>
+    </div>
+    <div style="display: flex; gap: 1rem;">
+      <div class="card" style="padding: 0.65rem 1.25rem; display: flex; align-items: center; gap: 0.75rem;">
+        <span style="font-size: 1.25rem;">🏆</span>
+        <div>
+          <div style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Unlocked</div>
+          <div style="font-size: 1.15rem; font-weight: 800; color: #818cf8;">{{ earned_count }} / {{ total_count }} Badges</div>
+        </div>
+      </div>
+      <div class="card" style="padding: 0.65rem 1.25rem; display: flex; align-items: center; gap: 0.75rem;">
+        <span style="font-size: 1.25rem;">⭐</span>
+        <div>
+          <div style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Academic Score</div>
+          <div style="font-size: 1.15rem; font-weight: 800; color: #f59e0b;">{{ total_points }} Points</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Badges Grid -->
+  <div class="grid-4">
+    {% for item in achievements %}
+      {% set ach = item.achievement %}
+      {% set earned = item.is_earned %}
+      <div class="card" style="padding: 1.5rem; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: space-between; border-color: {% if earned %}var(--primary){% else %}var(--border-color){% endif %}; opacity: {% if earned %}1{% else %}0.6{% endif %}; background: {% if earned %}radial-gradient(circle at 50% 20%, rgba(99, 102, 241, 0.15) 0%, rgba(19, 29, 51, 1) 75%){% else %}var(--bg-card){% endif %};">
+        <div>
+          <div style="width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; font-size: 1.75rem; background: {% if earned %}linear-gradient(135deg, var(--primary), var(--secondary)){% else %}var(--bg-sidebar){% endif %}; border: 2px solid {% if earned %}#818cf8{% else %}var(--border-color){% endif %}; box-shadow: {% if earned %}0 4px 15px var(--primary-glow){% else %}none{% endif %};">
+            {% if ach.category == 'focus' %}⚡
+            {% elif ach.category == 'assignment' %}📝
+            {% elif ach.category == 'syllabus' %}📖
+            {% elif ach.category == 'collaboration' %}👥
+            {% elif ach.category == 'consistency' %}📅
+            {% else %}🏆
+            {% endif %}
+          </div>
+
+          <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.35rem; color: {% if earned %}var(--text-main){% else %}var(--text-muted){% endif %};">
+            {{ ach.name }}
+          </h3>
+
+          <p style="font-size: 0.82rem; color: var(--text-dim); margin-bottom: 0.75rem; line-height: 1.4;">
+            {{ ach.description }}
+          </p>
+        </div>
+
+        <div style="width: 100%; border-top: 1px solid var(--border-color); padding-top: 0.75rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.76rem;">
+          <span style="color: #f59e0b; font-weight: 700;">+{{ ach.points }} pts</span>
+          {% if earned %}
+            <span style="color: #34d399; font-weight: 600;">✓ Unlocked</span>
+          {% else %}
+            <span style="color: var(--text-dim);">Locked 🔒</span>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Consistency Philosophy Note -->
+  <div class="card" style="padding: 1.25rem 1.5rem; background: var(--bg-sidebar); border-color: var(--border-color);">
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+      <span style="font-size: 1.5rem;">🌱</span>
+      <div>
+        <h4 style="font-size: 0.95rem; font-weight: 700;">Healthy Consistency Over Punitive Streaks</h4>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">
+          StudySync rewards weekly momentum rather than punishing rest days. We measure your consistency across flexible weekly goals rather than strict, stress-inducing daily streaks.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
