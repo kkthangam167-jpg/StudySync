@@ -29,17 +29,26 @@ def create_app(config_name=None):
     except OSError:
         pass
 
-    # In production, verify that persistent database URI is configured via DATABASE_URL
-    if config_name == 'production':
+    # In production or Vercel serverless environments, verify persistent database URI or fall back to writable temp SQLite
+    if config_name == 'production' or os.environ.get('VERCEL') == '1':
+        import tempfile
         from config import get_database_uri
         db_uri = get_database_uri(default_filename=None)
-        if not db_uri:
-            raise RuntimeError(
-                "CRITICAL PRODUCTION CONFIGURATION ERROR: DATABASE_URL is not set!\n"
-                "StudySync requires a persistent PostgreSQL database in production (e.g., Supabase, Neon, AWS RDS).\n"
-                "Please configure the DATABASE_URL environment variable in your Vercel project settings."
+
+        is_serverless = bool(os.environ.get('VERCEL') == '1' or os.environ.get('AWS_LAMBDA_FUNCTION_NAME'))
+        is_unwritable_sqlite = bool(db_uri and db_uri.startswith('sqlite:///') and not db_uri.startswith('sqlite:///:memory:') and '/tmp/' not in db_uri and tempfile.gettempdir().replace('\\', '/') not in db_uri)
+
+        if not db_uri or (is_serverless and is_unwritable_sqlite):
+            tmp_db_file = os.path.join(tempfile.gettempdir(), 'studysync.db').replace('\\', '/')
+            fallback_uri = f'sqlite:///{tmp_db_file}'
+            app.logger.warning(
+                "DATABASE_URL is not set or points to an unwritable local file on Vercel. "
+                f"Falling back to temporary writable SQLite database at {fallback_uri}. "
+                "For permanent data persistence on Vercel, please set DATABASE_URL (PostgreSQL) in your Vercel Project Settings."
             )
-        app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
+            app.config['SQLALCHEMY_DATABASE_URI'] = fallback_uri
+        else:
+            app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
 
     # Initialize extensions
     db.init_app(app)
@@ -47,6 +56,22 @@ def create_app(config_name=None):
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Please log in to access this page.'
     login_manager.login_message_category = 'info'
+
+    # Reverse proxy support for Vercel / Cloudflare
+    try:
+        from werkzeug.middleware.proxy_fix import ProxyFix
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+    except Exception:
+        pass
+
+    # Ensure database schema exists safely
+    with app.app_context():
+        try:
+            db.create_all()
+            from app.services.achievement_engine import AchievementEngine
+            AchievementEngine.seed_default_achievements()
+        except Exception as e:
+            app.logger.warning(f"Database schema auto-init notice: {e}")
 
     # Register Models
     from app.models import (

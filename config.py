@@ -1,4 +1,5 @@
 import os
+import tempfile
 from datetime import timedelta
 from dotenv import load_dotenv
 
@@ -60,8 +61,9 @@ class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
     
-    # Persistent PostgreSQL database configuration via DATABASE_URL
-    SQLALCHEMY_DATABASE_URI = get_database_uri(default_filename=None)
+    # Persistent PostgreSQL database configuration via DATABASE_URL (falls back to temporary SQLite)
+    _default_tmp = os.path.join(tempfile.gettempdir(), 'studysync.db').replace('\\', '/')
+    SQLALCHEMY_DATABASE_URI = get_database_uri(default_filename=None) or f'sqlite:///{_default_tmp}'
     
     # Connection pool options optimized for serverless / persistent PostgreSQL (e.g. Supabase, Neon)
     SQLALCHEMY_ENGINE_OPTIONS = {

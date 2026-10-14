@@ -33,12 +33,13 @@ def test_production_config_pool_options():
     assert ProductionConfig.SESSION_COOKIE_HTTPONLY is True
 
 
-def test_production_config_requires_database_url():
-    """Ensures create_app('production') fails fast if DATABASE_URL is not configured."""
+def test_production_config_fallback_without_database_url():
+    """Ensures create_app('production') falls back safely to temporary SQLite when DATABASE_URL is not set."""
     with patch.dict(os.environ, {'DATABASE_URL': ''}, clear=False):
-        with pytest.raises(RuntimeError) as exc_info:
-            create_app('production')
-        assert "DATABASE_URL is not set" in str(exc_info.value)
+        prod_app = create_app('production')
+        assert prod_app is not None
+        assert prod_app.config['DEBUG'] is False
+        assert 'sqlite:///' in prod_app.config['SQLALCHEMY_DATABASE_URI']
 
 
 def test_production_config_succeeds_with_database_url():
@@ -51,9 +52,11 @@ def test_production_config_succeeds_with_database_url():
 
 
 def test_vercel_entrypoint_exports_wsgi_app():
-    """Ensures api/index.py exports a valid Flask WSGI application instance."""
-    with patch.dict(os.environ, {'DATABASE_URL': 'sqlite:///:memory:'}):
+    """Ensures api/index.py exports a valid Flask WSGI application instance even without DATABASE_URL."""
+    with patch.dict(os.environ, {'DATABASE_URL': ''}):
+        import importlib
         import api.index as vercel_entry
+        importlib.reload(vercel_entry)
         assert hasattr(vercel_entry, 'app')
         assert vercel_entry.app is not None
         # Verify core blueprints are registered on the Vercel app
